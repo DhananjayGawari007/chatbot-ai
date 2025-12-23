@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+
+  <title>AI Chatbot</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .chat {
+      background: white;
+      width: 400px;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    #messages {
+      height: 250px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .user { font-weight: bold; }
+    .bot { color: green; }
+  </style>
+</head>
+<body>
+
+<div class="chat">
+  <h3>AI Chatbot</h3>
+  <div id="messages"></div>
+  <div class="input-area">
+  <input id="input" placeholder="Type message..." />
+  <button onclick="send()">Send</button>
+</div>
+</div>
+
+<script>
+async function send() {
+  const input = document.getElementById("input");
+  const msg = input.value;
+  if (!msg) return;
+
+  add("You", msg);
+  input.value = "";
+
+  const res = await fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: msg })
+  });
+
+  const data = await res.json();
+  add("Bot", data.reply);
+}
+
+function add(sender, text) {
+  const messages = document.getElementById("messages");
+  const div = document.createElement("div");
+
+  div.classList.add("message");
+  div.classList.add(sender === "You" ? "user" : "bot");
+  messages.appendChild(div);
+
+  messages.scrollTop = messages.scrollHeight;
+
+  if (sender === "Bot") {
+    let i = 0;
+    const interval = setInterval(() => {
+      div.textContent += text.charAt(i);
+      i++;
+      messages.scrollTop = messages.scrollHeight;
+
+      if (i >= text.length) clearInterval(interval);
+    }, 15); // typing speed (lower = faster)
+  } else {
+    div.textContent = text;
+  }
+}
+
+document.getElementById("input").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    send();
+  }
+});
+</script>
+
+</body>
+</html>
