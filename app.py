@@ -9,12 +9,21 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Ensure the key is loaded
+# 1. Setup API Key
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
-# Initialize the model at the top level (no spaces at the start of these lines)
-model = genai.GenerativeModel(model_name='gemini-1.5-flash')
+# 2. Setup the Model with safety filters disabled
+# This prevents the bot from crashing when it gives wellness advice
+model = genai.GenerativeModel(
+    model_name='gemini-1.5-flash',
+    safety_settings=[
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
+)
 
 @app.route("/")
 def home():
@@ -27,24 +36,22 @@ def chat():
         user_message = data.get("message")
         
         if not user_message:
-            return jsonify({"reply": "I didn't receive a message."}), 400
+            return jsonify({"reply": "Empty message."}), 400
 
-        # System instructions included in the prompt
-        prompt = (
-            "You are CareNest AI, a helpful Health and Wellness assistant. "
-            "Provide supportive advice. User: " + user_message
-        )
+        prompt = "User: " + user_message + "\nAssistant: Provide helpful wellness advice."
         
         response = model.generate_content(prompt)
         
-        if response.text:
+        # 3. Safe way to check for a response
+        if response.candidates and response.candidates[0].content.parts:
             return jsonify({"reply": response.text})
         else:
-            return jsonify({"reply": "I'm sorry, I cannot answer that. How else can I help?"})
+            return jsonify({"reply": "I'm sorry, I can't answer that. Please ask something else."})
 
     except Exception as e:
+        # This print is for YOU to see in the Render "Logs" tab
         print(f"DETAILED ERROR: {e}")
-        return jsonify({"reply": "Connection Error. Please check logs."}), 500
+        return jsonify({"reply": f"Error: {str(e)}"}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
