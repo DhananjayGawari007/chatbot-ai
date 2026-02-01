@@ -20,7 +20,8 @@ genai.configure(api_key=api_key)
 
 # Configure the model with safety settings set to 'BLOCK_NONE' 
 # so wellness advice isn't accidentally censored
-model = genai.GenerativeModel(model_name='gemini-1.5-flash'),
+model = genai.GenerativeModel(
+    model_name='gemini-1.5-flash'),
     generation_config={
         "temperature": 0.7,
         "top_p": 0.95,
