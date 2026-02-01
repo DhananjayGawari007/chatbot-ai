@@ -16,7 +16,7 @@ genai.configure(api_key=api_key)
 # 2. Setup the Model with safety filters disabled
 # This prevents the bot from crashing when it gives wellness advice
 model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
+    model_name='gemini-pro',
     safety_settings=[
         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
