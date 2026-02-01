@@ -13,17 +13,19 @@ CORS(app)
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
-# 2. Setup the Model with safety filters disabled
-# This prevents the bot from crashing when it gives wellness advice
-model = genai.GenerativeModel(
-    model_name='gemini-pro',
-    safety_settings=[
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-    ]
-)
+# --- DEBUG: LIST MODELS ---
+# This will print every model your key can see into the Render logs
+try:
+    print("Listing available models for this key:")
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            print(f"AVAILABLE MODEL: {m.name}")
+except Exception as e:
+    print(f"COULD NOT LIST MODELS: {e}")
+
+# 2. Use the FULL PATH for the model name
+# 'models/gemini-1.5-flash' is the most compatible path
+model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
 
 @app.route("/")
 def home():
@@ -38,18 +40,15 @@ def chat():
         if not user_message:
             return jsonify({"reply": "Empty message."}), 400
 
-        prompt = "User: " + user_message + "\nAssistant: Provide helpful wellness advice."
+        # Simple prompt
+        response = model.generate_content(user_message)
         
-        response = model.generate_content(prompt)
-        
-        # 3. Safe way to check for a response
-        if response.candidates and response.candidates[0].content.parts:
+        if response.text:
             return jsonify({"reply": response.text})
         else:
-            return jsonify({"reply": "I'm sorry, I can't answer that. Please ask something else."})
+            return jsonify({"reply": "I'm sorry, I couldn't process that wellness query."})
 
     except Exception as e:
-        # This print is for YOU to see in the Render "Logs" tab
         print(f"DETAILED ERROR: {e}")
         return jsonify({"reply": f"Error: {str(e)}"}), 500
 
